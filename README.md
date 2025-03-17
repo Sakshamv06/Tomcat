@@ -1,13 +1,13 @@
 # Setting Up Multiple Tomcat Instances and Deploying Web Applications
 
 [**Step 1: Creating Web Applications**](#step-1-creating-web-applications)  
-[1.1 Writing a Script to Generate Web Applications](#1.1-writing-a-script-to-generate-web-applications)  
-[1.2 Generating WAR Files for Deployment](#1.2-generating-war-files-for-deployment)  
+[1.1 Writing a Script to Generate Web Applications](#11-writing-a-script-to-generate-web-applications)  
+[1.2 Generating WAR Files for Deployment](#12-generating-war-files-for-deployment)  
 
 [**Step 2: Setting Up Tomcat Instances**](#step-2-setting-up-tomcat-instances)  
-[2.1 Installing and Configuring Tomcat](#2.1-installing-and-configuring-tomcat)  
-[2.2 Modifying server.xml for Each Instance](#2.2-modifying-serverxml-for-each-instance)  
-[2.3 Configuring setenv.sh for Each Instance](#2.3-configuring-setenvsh-for-each-instance)  
+[2.1 Installing and Configuring Tomcat](#21-installing-and-configuring-tomcat)  
+[2.2 Modifying server.xml for Each Instance](#22-modifying-serverxml-for-each-instance)  
+[2.3 Configuring setenv.sh for Each Instance](#23-configuring-setenvsh-for-each-instance)  
 
 [**Step 3: Automating Tomcat Startup**](#step-3-automating-tomcat-startup)  
 
