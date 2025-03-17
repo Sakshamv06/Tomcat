@@ -129,6 +129,42 @@ Example diff between two `server.xml` files:
 
 ```bash
 diff /opt/tomcat/tc3/conf/server.xml /opt/tomcat/tc2/conf/server.xml
+
+22c22
+< <Server port="8007" shutdown="SHUTDOWN">
+---
+> <Server port="8006" shutdown="SHUTDOWN">
+70c70
+< 	<Connector port="8082" protocol="HTTP/1.1"
+---
+> 	<Connector port="8081" protocol="HTTP/1.1"
+102c102
+<            	port="8011"
+---
+>            	port="8010"
+150c150
+<
+---
+>
+
+diff /opt/tomcat/tc1/conf/server.xml  /opt/tomcat/tc4/conf/server.xml
+22c22
+< <Server port="8005" shutdown="SHUTDOWN">
+---
+> <Server port="8008" shutdown="SHUTDOWN">
+70c70
+< 	<Connector port="8080" protocol="HTTP/1.1"
+---
+> 	<Connector port="8083" protocol="HTTP/1.1"
+102c102
+<            	port="8009"
+---
+>            	port="8012"
+150c150
+<     	<Valve className="org.apache.catalina.valves.ErrorReportValve" showReport="false" showServerInfo="false"/>
+---
+>
+
 ```
 
 ### **2.3 Configuring setenv.sh for Each Instance**
@@ -144,6 +180,11 @@ Example diff between two `setenv.sh` files:
 
 ```bash
 diff /opt/tomcat/tc3/bin/setenv.sh /opt/tomcat/tc2/bin/setenv.sh
+1c1
+< export CATALINA_HOME=/opt/tomcat/tc3
+---
+> export CATALINA_HOME=/opt/tomcat/tc2
+
 ```
 
 ## **Step 3: Automating Tomcat Startup** 
@@ -201,71 +242,114 @@ Changes in the `haproxy.cfg` file:
 ```txt
 # Global settings
 global
-  log /dev/log local0
-  log /dev/log local1 notice
-  chroot /var/lib/haproxy
-  stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
-  stats timeout 30s
-  user haproxy
-  group haproxy
-  daemon
+	log /dev/log local0
+	log /dev/log local1 notice
+	chroot /var/lib/haproxy
+	stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
+	stats timeout 30s
+	user haproxy
+	group haproxy
+	daemon
 
-  # SSL/TLS settings
-  ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305
-  ssl-default-bind-ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
-  ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets
+	# SSL/TLS settings
+	ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305
+	ssl-default-bind-ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+	ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets
 
 # Default settings
 defaults
-  log global
-  mode http
-  option httplog
-  option dontlognull
-  timeout connect 5000
-  timeout client 50000
-  timeout server 50000
+	log global
+	mode http
+	option httplog
+	option dontlognull
+	timeout connect 5000
+	timeout client 50000
+	timeout server 50000
+	errorfile 400 /etc/haproxy/errors/400.http
+	errorfile 403 /etc/haproxy/errors/403.http
+	errorfile 408 /etc/haproxy/errors/408.http
+	errorfile 500 /etc/haproxy/errors/500.http
+	errorfile 502 /etc/haproxy/errors/502.http
+	errorfile 503 /etc/haproxy/errors/503.http
+	errorfile 504 /etc/haproxy/errors/504.http
 
 # Frontend configuration
 frontend http_front
-  bind *:80
-  option httplog
-  option forwardfor
-  acl app1_request path_beg /app1
-  acl app2_request path_beg /app2
-  acl app3_request path_beg /app3
-  acl app4_request path_beg /app4
-  acl app5_request path_beg /app5
-  acl app6_request path_beg /app6
-  acl app7_request path_beg /app7
-  acl app8_request path_beg /app8
-  use_backend tc1_backend if app1_request
-  use_backend tc1_backend if app2_request
-  use_backend tc2_backend if app3_request
-  use_backend tc2_backend if app4_request
-  use_backend tc3_backend if app5_request
-  use_backend tc3_backend if app6_request
-  use_backend tc4_backend if app7_request
-  use_backend tc4_backend if app8_request
+	bind *:80
+	option httplog
+	option forwardfor
+	# Define ACLs for each app based on the path
+	acl app1_request path_beg /app1
+	acl app2_request path_beg /app2
+	acl app3_request path_beg /app3
+	acl app4_request path_beg /app4
+	acl app5_request path_beg /app5
+	acl app6_request path_beg /app6
+	acl app7_request path_beg /app7
+	acl app8_request path_beg /app8
+    
+	# Define ACLs for IP-based restrictions
+	acl is_base_vm src 192_x_x_x  	# Base VM's IP
+	acl is_ip_10_x_x_x src 192.x.x.x   
+	# Allow base VM to access all backends
+	http-request allow if is_base_vm
+
+	# Allow IP 10.198.202.129 to access only app1 and app2
+	http-request allow if is_ip_10_x_x_x app1_request
+	http-request allow if is_ip_10_x_x_x app2_request
+
+	# Deny access to app3, app4, app5, app6, app7, app8 for IP 10.198.202.129
+	http-request deny if is_ip_10_x_x_x !app1_request
+	http-request deny if is_ip_10_x_x_x !app2_request   	 
+
+	# Allow all other clients to access app3, app4, app5, app6 only
+	http-request allow if !is_ip_10_x_x_x app3_request
+	http-request allow if !is_ip_10_x_x_x app4_request
+	http-request allow if !is_ip_10_x_x_x app5_request
+	http-request allow if !is_ip_10_x_x_x app6_request
+
+	# Deny access to app1, app2, app7, app8 for all other clients
+	http-request deny if !is_ip_10_x_x_x app1_request
+	http-request deny if !is_ip_10_x_x_x app2_request
+	http-request deny if !is_ip_10_x_x_x app7_request
+	http-request deny if !is_ip_10_x_x_x app8_request
+
+	# Add security headers to all responses
+	http-response add-header X-XSS-Protection "1; mode=block"
+	http-response add-header X-Content-Type-Options "nosniff"
+	http-response add-header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+	http-response add-header Access-Control-Allow-Origin "*"
+	http-response add-header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+
+	# Use different backends based on the URL path
+	use_backend tc1_backend if app1_request
+	use_backend tc1_backend if app2_request
+	use_backend tc2_backend if app3_request
+	use_backend tc2_backend if app4_request
+	use_backend tc3_backend if app5_request
+	use_backend tc3_backend if app6_request
+	use_backend tc4_backend if app7_request
+	use_backend tc4_backend if app8_request
 
 # Backend configurations for each Tomcat instance
 backend tc1_backend
-  server tc1 *:8080 check
+	server tc1 *:8080 check
 
 backend tc2_backend
-  server tc2 *:8081 check
+	server tc2 *:8081 check
 
 backend tc3_backend
-  server tc3 *:8082 check
+	server tc3 *:8082 check
 
 backend tc4_backend
-  server tc4 *:8083 check
+	server tc4 *:8083 check
 
 # HAProxy Stats Configuration
 listen stats
-  bind *:8088
-  stats enable
-  stats uri /haproxy_stats
-  stats auth admin:password
+	bind *:8088
+	stats enable
+	stats uri /haproxy_stats
+	stats auth admin:password
 ```
 
 Restart HAProxy:
